@@ -46,8 +46,11 @@ CFST_PORT=443 CFST_COLO=HKG,NRT,LAX CFST_DOWNLOAD_COUNT=20 bash script/local_upd
 - `CFST_PORT`：EdgeTunnel 节点端口，默认 `443`。
 - `CFST_COLO`：可选地区过滤，比如 `HKG,NRT,LAX`；为空则不过滤。
 - `CFST_DOWNLOAD_COUNT`：下载测速并发布的数量，默认 `20`。
-- `CFST_MAX_DELAY`：平均延迟上限，默认 `300` ms。
+- `CFST_MAX_DELAY`：平均延迟上限，默认 `100` ms。
+- `CFST_EARLY_COUNT`：延迟测速早停数量，默认等于 `CFST_DOWNLOAD_COUNT`。例如默认拿到 20 个 100ms 内、0 丢包的 IP 后停止继续扫描。
+- `CFST_THREADS`：延迟测速并发，默认 `20`。并发越高越容易一次性扫太多 IP。候选 IP 会在测速前随机打乱，早停不会固定从 `ip.txt` 前面的网段开始。
 - `CFST_MIN_SPEED`：发布结果的下载速度下限，默认 `0` MB/s。默认会只发布有实际下载测速速度的节点；如果全部速度都是 0，才回退发布延迟结果。
+- `CFST_REBUILD`：是否每次运行前重新编译本仓库里的 CloudflareST，默认 `1`。这样源码里的早停逻辑会生效。
 
 ## 定时运行
 

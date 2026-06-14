@@ -186,5 +186,8 @@ func loadIPRanges() []*net.IPAddr {
 			}
 		}
 	}
+	rand.Shuffle(len(ranges.ips), func(i, j int) {
+		ranges.ips[i], ranges.ips[j] = ranges.ips[j], ranges.ips[i]
+	})
 	return ranges.ips
 }

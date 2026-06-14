@@ -5,13 +5,15 @@ ROOT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
 cd "$ROOT_DIR"
 
 : "${CFST_BIN:=./cfst}"
-: "${CFST_THREADS:=200}"
+: "${CFST_REBUILD:=1}"
+: "${CFST_THREADS:=20}"
 : "${CFST_PING_TIMES:=4}"
 : "${CFST_DOWNLOAD_COUNT:=20}"
 : "${CFST_DOWNLOAD_TIME:=5}"
 : "${CFST_PORT:=443}"
-: "${CFST_MAX_DELAY:=300}"
+: "${CFST_MAX_DELAY:=100}"
 : "${CFST_MAX_LOSS_RATE:=0}"
+: "${CFST_EARLY_COUNT:=$CFST_DOWNLOAD_COUNT}"
 : "${CFST_MIN_SPEED:=0}"
 : "${CFST_IP_FILE:=ip.txt}"
 : "${CFST_IP:=}"
@@ -22,7 +24,7 @@ cd "$ROOT_DIR"
 : "${BESTIP_LIMIT:=$CFST_DOWNLOAD_COUNT}"
 : "${BESTIP_FALLBACK_COLO:=CF}"
 
-if [[ ! -x "$CFST_BIN" ]]; then
+if [[ "$CFST_REBUILD" == "1" || ! -x "$CFST_BIN" ]]; then
   go build -o cfst .
   CFST_BIN="./cfst"
 fi
@@ -35,6 +37,7 @@ args=(
   -tp "$CFST_PORT"
   -tl "$CFST_MAX_DELAY"
   -tlr "$CFST_MAX_LOSS_RATE"
+  -early "$CFST_EARLY_COUNT"
   -sl 0
   -p 0
   -o "$CFST_RESULT_CSV"

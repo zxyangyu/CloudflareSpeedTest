@@ -51,6 +51,8 @@ https://github.com/XIU2/CloudflareSpeedTest
         平均延迟下限；只输出高于指定平均延迟的 IP；(默认 0 ms)
     -tlr 0.2
         丢包几率上限；只输出低于/等于指定丢包率的 IP，范围 0.00~1.00，0 过滤掉任何丢包的 IP；(默认 1.00)
+    -early 20
+        延迟测速早停数量；找到指定数量满足延迟/丢包条件的 IP 后停止继续扫描，0 为禁用；(默认 0)
     -sl 5
         下载速度下限；只输出高于指定下载速度的 IP，凑够指定数量 [-dn] 才会停止测速；(默认 0.00 MB/s)
 
@@ -92,6 +94,7 @@ https://github.com/XIU2/CloudflareSpeedTest
 	flag.IntVar(&maxDelay, "tl", 9999, "平均延迟上限")
 	flag.IntVar(&minDelay, "tll", 0, "平均延迟下限")
 	flag.Float64Var(&maxLossRate, "tlr", 1, "丢包几率上限")
+	flag.IntVar(&task.EarlyStopCount, "early", 0, "延迟测速早停数量")
 	flag.Float64Var(&task.MinSpeed, "sl", 0, "下载速度下限")
 
 	flag.IntVar(&utils.PrintNum, "p", 10, "显示结果数量")

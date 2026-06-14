@@ -20,9 +20,10 @@ const (
 )
 
 var (
-	Routines      = defaultRoutines
-	TCPPort   int = defaultPort
-	PingTimes int = defaultPingTimes
+	Routines           = defaultRoutines
+	TCPPort        int = defaultPort
+	PingTimes      int = defaultPingTimes
+	EarlyStopCount int
 )
 
 type Ping struct {
@@ -69,6 +70,9 @@ func (p *Ping) Run() utils.PingDelaySet {
 		utils.Cyan.Printf("开始延迟测速（模式：TCP, 端口：%d, 范围：%v ~ %v ms, 丢包：%.2f)\n", TCPPort, utils.InputMinDelay.Milliseconds(), utils.InputMaxDelay.Milliseconds(), utils.InputMaxLossRate)
 	}
 	for _, ip := range p.ips {
+		if p.shouldStopEarly() {
+			break
+		}
 		p.wg.Add(1)
 		p.control <- false
 		go p.start(ip)
@@ -77,6 +81,15 @@ func (p *Ping) Run() utils.PingDelaySet {
 	p.bar.Done()
 	sort.Sort(p.csv)
 	return p.csv
+}
+
+func (p *Ping) shouldStopEarly() bool {
+	if EarlyStopCount <= 0 {
+		return false
+	}
+	p.m.Lock()
+	defer p.m.Unlock()
+	return p.matchingCountLocked() >= EarlyStopCount
 }
 
 func (p *Ping) start(ip *net.IPAddr) {
@@ -125,6 +138,21 @@ func (p *Ping) appendIPData(data *utils.PingData) {
 	p.csv = append(p.csv, utils.CloudflareIPData{
 		PingData: data,
 	})
+}
+
+func (p *Ping) matchingCountLocked() int {
+	count := 0
+	for _, item := range p.csv {
+		if item.Delay > utils.InputMaxDelay || item.Delay < utils.InputMinDelay {
+			continue
+		}
+		lossRate := float32(item.Sended-item.Received) / float32(item.Sended)
+		if lossRate > utils.InputMaxLossRate {
+			continue
+		}
+		count++
+	}
+	return count
 }
 
 // handle tcping
