@@ -14,6 +14,8 @@ from pathlib import Path
 IP_COLUMN = "IP 地址"
 COLO_COLUMN = "地区码"
 SPEED_COLUMN = "下载速度(MB/s)"
+DELAY_COLUMN = "平均延迟"
+LOSS_COLUMN = "丢包率"
 
 
 def parse_args() -> argparse.Namespace:
@@ -59,9 +61,35 @@ def row_speed(row: dict[str, str]) -> float:
         return 0
 
 
-def format_node(row: dict[str, str], port: int, fallback_colo: str) -> tuple[str, str]:
+def clean_number(value: str, default: str = "0") -> str:
+    value = value.strip()
+    if not value:
+        return default
+    try:
+        parsed = float(value)
+    except ValueError:
+        return default
+    if parsed.is_integer():
+        return str(int(parsed))
+    return f"{parsed:.2f}".rstrip("0").rstrip(".")
+
+
+def node_label(row: dict[str, str], fallback_colo: str, index: int) -> str:
+    colo = normalize_colo(row.get(COLO_COLUMN) or "", fallback_colo)
+    delay = clean_number(row.get(DELAY_COLUMN) or "")
+    speed = clean_number(row.get(SPEED_COLUMN) or "")
+    loss = clean_number(row.get(LOSS_COLUMN) or "")
+    return f"{colo}-{index:02d}-{delay}ms-{speed}MBps-loss{loss}"
+
+
+def format_node(
+    row: dict[str, str],
+    port: int,
+    fallback_colo: str,
+    index: int,
+) -> tuple[str, str]:
     ip = (row.get(IP_COLUMN) or "").strip()
-    label = normalize_colo(row.get(COLO_COLUMN) or "", fallback_colo)
+    label = node_label(row, fallback_colo, index)
     return ip, f"{host_port(ip, port)}#{label}"
 
 
@@ -103,7 +131,7 @@ def read_nodes(
         if not ip or ip in seen:
             continue
         try:
-            ip, node = format_node(row, port, fallback_colo)
+            ip, node = format_node(row, port, fallback_colo, len(nodes) + 1)
         except ValueError as exc:
             print(f"Skipping invalid IP {ip}: {exc}")
             continue
@@ -118,7 +146,7 @@ def read_nodes(
             if not ip or ip in seen:
                 continue
             try:
-                ip, node = format_node(row, port, fallback_colo)
+                ip, node = format_node(row, port, fallback_colo, len(nodes) + 1)
             except ValueError as exc:
                 print(f"Skipping invalid IP {ip}: {exc}")
                 continue

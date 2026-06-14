@@ -3,8 +3,8 @@
 这个仓库已经可以把 CloudflareSpeedTest 的 `result.csv` 转成 EdgeTunnel 可读取的普通文本 API：
 
 ```text
-104.27.200.69:443#LAX
-172.67.60.78:443#SEA
+104.27.200.69:443#LAX-01-146.23ms-28.64MBps-loss0
+172.67.60.78:443#SEA-02-139.82ms-15.02MBps-loss0
 ```
 
 ## GitHub Actions 自动更新
@@ -38,7 +38,7 @@ CFST_PORT=443 CFST_COLO=HKG,NRT,LAX CFST_DOWNLOAD_COUNT=20 bash script/update_ed
 
 - `CFST_PORT`：EdgeTunnel 节点端口，默认 `443`。
 - `CFST_COLO`：可选地区过滤，比如 `HKG,NRT,LAX`；为空则不过滤。
-- `CFST_DOWNLOAD_COUNT`：测速并发布的数量，默认 `20`。
+- `CFST_DOWNLOAD_COUNT`：下载测速并发布的数量，默认 `20`。
 - `CFST_MAX_DELAY`：平均延迟上限，默认 `300` ms。
 - `CFST_MIN_SPEED`：发布结果的下载速度下限，默认 `0` MB/s。这个过滤在 `result.csv` 生成后执行，不会让 CloudflareSpeedTest 扫完整个候选队列。
 
