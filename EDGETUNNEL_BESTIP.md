@@ -40,6 +40,6 @@ CFST_PORT=443 CFST_COLO=HKG,NRT,LAX CFST_DOWNLOAD_COUNT=20 bash script/update_ed
 - `CFST_COLO`：可选地区过滤，比如 `HKG,NRT,LAX`；为空则不过滤。
 - `CFST_DOWNLOAD_COUNT`：测速并发布的数量，默认 `20`。
 - `CFST_MAX_DELAY`：平均延迟上限，默认 `300` ms。
-- `CFST_MIN_SPEED`：下载速度下限，默认 `0` MB/s。
+- `CFST_MIN_SPEED`：发布结果的下载速度下限，默认 `0` MB/s。这个过滤在 `result.csv` 生成后执行，不会让 CloudflareSpeedTest 扫完整个候选队列。
 
 GitHub Actions 测到的是 GitHub runner 所在网络的结果。如果你想按自己的宽带/VPS 线路优选，就在对应机器上定时运行本地脚本，然后提交 `bestip.txt`。

@@ -8,7 +8,7 @@ cd "$ROOT_DIR"
 : "${CFST_THREADS:=200}"
 : "${CFST_PING_TIMES:=4}"
 : "${CFST_DOWNLOAD_COUNT:=20}"
-: "${CFST_DOWNLOAD_TIME:=10}"
+: "${CFST_DOWNLOAD_TIME:=5}"
 : "${CFST_PORT:=443}"
 : "${CFST_MAX_DELAY:=300}"
 : "${CFST_MAX_LOSS_RATE:=0}"
@@ -35,7 +35,7 @@ args=(
   -tp "$CFST_PORT"
   -tl "$CFST_MAX_DELAY"
   -tlr "$CFST_MAX_LOSS_RATE"
-  -sl "$CFST_MIN_SPEED"
+  -sl 0
   -p 0
   -o "$CFST_RESULT_CSV"
 )
@@ -61,4 +61,5 @@ python3 script/edgetunnel_bestip.py \
   --output "$BESTIP_OUTPUT" \
   --port "$CFST_PORT" \
   --limit "$BESTIP_LIMIT" \
-  --fallback-colo "$BESTIP_FALLBACK_COLO"
+  --fallback-colo "$BESTIP_FALLBACK_COLO" \
+  --min-speed "$CFST_MIN_SPEED"

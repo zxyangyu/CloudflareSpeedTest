@@ -13,6 +13,7 @@ from pathlib import Path
 
 IP_COLUMN = "IP 地址"
 COLO_COLUMN = "地区码"
+SPEED_COLUMN = "下载速度(MB/s)"
 
 
 def parse_args() -> argparse.Namespace:
@@ -23,6 +24,12 @@ def parse_args() -> argparse.Namespace:
     parser.add_argument("--output", default="bestip.txt", help="Output text API path.")
     parser.add_argument("--port", type=int, default=443, help="EdgeTunnel node port.")
     parser.add_argument("--limit", type=int, default=20, help="Max nodes to write.")
+    parser.add_argument(
+        "--min-speed",
+        type=float,
+        default=0,
+        help="Min download speed in MB/s. Falls back to unfiltered rows if no row matches.",
+    )
     parser.add_argument(
         "--fallback-colo",
         default="CF",
@@ -45,10 +52,30 @@ def normalize_colo(value: str, fallback: str) -> str:
     return colo
 
 
-def read_nodes(csv_path: Path, port: int, limit: int, fallback_colo: str) -> list[str]:
+def row_speed(row: dict[str, str]) -> float:
+    try:
+        return float((row.get(SPEED_COLUMN) or "0").strip())
+    except ValueError:
+        return 0
+
+
+def format_node(row: dict[str, str], port: int, fallback_colo: str) -> tuple[str, str]:
+    ip = (row.get(IP_COLUMN) or "").strip()
+    label = normalize_colo(row.get(COLO_COLUMN) or "", fallback_colo)
+    return ip, f"{host_port(ip, port)}#{label}"
+
+
+def read_nodes(
+    csv_path: Path,
+    port: int,
+    limit: int,
+    fallback_colo: str,
+    min_speed: float,
+) -> list[str]:
     if not csv_path.exists():
         raise FileNotFoundError(f"CSV not found: {csv_path}")
 
+    rows: list[dict[str, str]] = []
     nodes: list[str] = []
     seen: set[str] = set()
 
@@ -59,13 +86,43 @@ def read_nodes(csv_path: Path, port: int, limit: int, fallback_colo: str) -> lis
         missing = {IP_COLUMN, COLO_COLUMN} - set(reader.fieldnames)
         if missing:
             raise ValueError(f"CSV missing columns: {', '.join(sorted(missing))}")
+        rows = list(reader)
 
-        for row in reader:
+    filtered_rows = rows
+    if min_speed > 0:
+        filtered_rows = [row for row in rows if row_speed(row) >= min_speed]
+        if not filtered_rows:
+            print(
+                f"No rows matched --min-speed {min_speed:.2f} MB/s; "
+                "falling back to unfiltered CloudflareSpeedTest results."
+            )
+            filtered_rows = rows
+
+    for row in filtered_rows:
+        ip = (row.get(IP_COLUMN) or "").strip()
+        if not ip or ip in seen:
+            continue
+        try:
+            ip, node = format_node(row, port, fallback_colo)
+        except ValueError as exc:
+            print(f"Skipping invalid IP {ip}: {exc}")
+            continue
+        nodes.append(node)
+        seen.add(ip)
+        if len(nodes) >= limit:
+            break
+
+    if not nodes and min_speed > 0:
+        for row in rows:
             ip = (row.get(IP_COLUMN) or "").strip()
             if not ip or ip in seen:
                 continue
-            label = normalize_colo(row.get(COLO_COLUMN) or "", fallback_colo)
-            nodes.append(f"{host_port(ip, port)}#{label}")
+            try:
+                ip, node = format_node(row, port, fallback_colo)
+            except ValueError as exc:
+                print(f"Skipping invalid IP {ip}: {exc}")
+                continue
+            nodes.append(node)
             seen.add(ip)
             if len(nodes) >= limit:
                 break
@@ -98,12 +155,15 @@ def main() -> None:
         raise ValueError("--port must be between 1 and 65535")
     if args.limit <= 0:
         raise ValueError("--limit must be greater than 0")
+    if args.min_speed < 0:
+        raise ValueError("--min-speed must be greater than or equal to 0")
 
     nodes = read_nodes(
         Path(args.csv),
         port=args.port,
         limit=args.limit,
         fallback_colo=args.fallback_colo,
+        min_speed=args.min_speed,
     )
     write_atomic(Path(args.output), nodes)
     print(f"Wrote {len(nodes)} EdgeTunnel nodes to {args.output}")

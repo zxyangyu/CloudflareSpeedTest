@@ -23,6 +23,10 @@ on:
         description: "Min download speed in MB/s"
         required: false
         default: "0"
+      download_time:
+        description: "Max seconds for each download speed test"
+        required: false
+        default: "5"
   schedule:
     - cron: "15 */8 * * *"
 
@@ -52,6 +56,7 @@ jobs:
           CFST_PORT: ${{ github.event.inputs.port || '443' }}
           CFST_COLO: ${{ github.event.inputs.colo || '' }}
           CFST_DOWNLOAD_COUNT: ${{ github.event.inputs.count || '20' }}
+          CFST_DOWNLOAD_TIME: ${{ github.event.inputs.download_time || '5' }}
           BESTIP_LIMIT: ${{ github.event.inputs.count || '20' }}
           CFST_MAX_DELAY: ${{ github.event.inputs.max_delay || '300' }}
           CFST_MIN_SPEED: ${{ github.event.inputs.min_speed || '0' }}
