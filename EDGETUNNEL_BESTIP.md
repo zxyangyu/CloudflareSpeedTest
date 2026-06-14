@@ -7,12 +7,11 @@
 172.67.60.78:443#SEA-02-139.82ms-15.02MBps-loss0
 ```
 
-## GitHub Actions 自动更新
+## 推荐用法：本地测速，GitHub 只托管文件
 
-1. 把这个 `CloudflareSpeedTest` 目录推送到你自己的 GitHub 仓库。
-2. 在仓库的 `Settings -> Actions -> General` 中确认 `Workflow permissions` 允许 `Read and write permissions`。
-3. 进入 `Actions -> Update EdgeTunnel Best IP -> Run workflow` 手动跑一次。
-4. 之后工作流会每 8 小时自动更新仓库根目录的 `bestip.txt`。
+不要用 GitHub Actions 跑测速。Actions 运行在 GitHub 的云端 runner 上，测到的是 GitHub 机房网络，不是你的本地网络。
+
+这个仓库现在推荐在你的电脑、VPS、软路由或实际使用代理的机器上运行测速脚本，然后把生成的 `bestip.txt` 推送到 GitHub。GitHub 只负责提供 Raw URL。
 
 EdgeTunnel 优选 API 填这个地址：
 
@@ -24,14 +23,22 @@ https://raw.githubusercontent.com/<你的GitHub用户名>/<你的仓库名>/mast
 
 ## 本地手动更新
 
+只生成 `bestip.txt`，不提交：
+
 ```bash
 bash script/update_edgetunnel_bestip.sh
+```
+
+生成 `bestip.txt`，并自动 commit + push 到 GitHub：
+
+```bash
+bash script/local_update_and_push.sh
 ```
 
 常用参数可以用环境变量覆盖：
 
 ```bash
-CFST_PORT=443 CFST_COLO=HKG,NRT,LAX CFST_DOWNLOAD_COUNT=20 bash script/update_edgetunnel_bestip.sh
+CFST_PORT=443 CFST_COLO=HKG,NRT,LAX CFST_DOWNLOAD_COUNT=20 bash script/local_update_and_push.sh
 ```
 
 说明：
@@ -42,4 +49,12 @@ CFST_PORT=443 CFST_COLO=HKG,NRT,LAX CFST_DOWNLOAD_COUNT=20 bash script/update_ed
 - `CFST_MAX_DELAY`：平均延迟上限，默认 `300` ms。
 - `CFST_MIN_SPEED`：发布结果的下载速度下限，默认 `0` MB/s。这个过滤在 `result.csv` 生成后执行，不会让 CloudflareSpeedTest 扫完整个候选队列。
 
-GitHub Actions 测到的是 GitHub runner 所在网络的结果。如果你想按自己的宽带/VPS 线路优选，就在对应机器上定时运行本地脚本，然后提交 `bestip.txt`。
+## 定时运行
+
+Linux crontab 示例，每 8 小时用当前机器网络测速并推送：
+
+```cron
+15 */8 * * * cd /home/zengxy/workspace/system_tool/CloudflareSpeedTest && bash script/local_update_and_push.sh >> local_update.log 2>&1
+```
+
+如果你是在另一台 VPS 或软路由上使用，请把仓库 clone 到那台机器，并在那台机器上配置定时任务。
