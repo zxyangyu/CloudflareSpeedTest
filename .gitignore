@@ -2,3 +2,7 @@ dist
 Releases
 *.exe
 *.csv
+cfst
+cfst_*
+__pycache__/
+*.pyc
