@@ -30,7 +30,7 @@ def parse_args() -> argparse.Namespace:
         "--min-speed",
         type=float,
         default=0,
-        help="Min download speed in MB/s. Falls back to unfiltered rows if no row matches.",
+        help="Min download speed in MB/s. Defaults to publishing only rows with speed > 0.",
     )
     parser.add_argument(
         "--fallback-colo",
@@ -116,15 +116,17 @@ def read_nodes(
             raise ValueError(f"CSV missing columns: {', '.join(sorted(missing))}")
         rows = list(reader)
 
-    filtered_rows = rows
-    if min_speed > 0:
-        filtered_rows = [row for row in rows if row_speed(row) >= min_speed]
-        if not filtered_rows:
-            print(
-                f"No rows matched --min-speed {min_speed:.2f} MB/s; "
-                "falling back to unfiltered CloudflareSpeedTest results."
-            )
-            filtered_rows = rows
+    speed_floor = min_speed if min_speed > 0 else 0
+    filtered_rows = [row for row in rows if row_speed(row) > speed_floor]
+    if not filtered_rows and min_speed > 0:
+        print(
+            f"No rows matched --min-speed {min_speed:.2f} MB/s; "
+            "falling back to rows with speed > 0."
+        )
+        filtered_rows = [row for row in rows if row_speed(row) > 0]
+    if not filtered_rows:
+        print("No rows have measured download speed; falling back to latency-only rows.")
+        filtered_rows = rows
 
     for row in filtered_rows:
         ip = (row.get(IP_COLUMN) or "").strip()
@@ -139,21 +141,6 @@ def read_nodes(
         seen.add(ip)
         if len(nodes) >= limit:
             break
-
-    if not nodes and min_speed > 0:
-        for row in rows:
-            ip = (row.get(IP_COLUMN) or "").strip()
-            if not ip or ip in seen:
-                continue
-            try:
-                ip, node = format_node(row, port, fallback_colo, len(nodes) + 1)
-            except ValueError as exc:
-                print(f"Skipping invalid IP {ip}: {exc}")
-                continue
-            nodes.append(node)
-            seen.add(ip)
-            if len(nodes) >= limit:
-                break
 
     if not nodes:
         raise ValueError(f"No valid nodes found in {csv_path}")

@@ -47,7 +47,7 @@ CFST_PORT=443 CFST_COLO=HKG,NRT,LAX CFST_DOWNLOAD_COUNT=20 bash script/local_upd
 - `CFST_COLO`：可选地区过滤，比如 `HKG,NRT,LAX`；为空则不过滤。
 - `CFST_DOWNLOAD_COUNT`：下载测速并发布的数量，默认 `20`。
 - `CFST_MAX_DELAY`：平均延迟上限，默认 `300` ms。
-- `CFST_MIN_SPEED`：发布结果的下载速度下限，默认 `0` MB/s。这个过滤在 `result.csv` 生成后执行，不会让 CloudflareSpeedTest 扫完整个候选队列。
+- `CFST_MIN_SPEED`：发布结果的下载速度下限，默认 `0` MB/s。默认会只发布有实际下载测速速度的节点；如果全部速度都是 0，才回退发布延迟结果。
 
 ## 定时运行
 
